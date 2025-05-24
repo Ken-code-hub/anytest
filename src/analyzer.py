@@ -35,8 +35,8 @@ class StatisticalAnalyzer:
 
         # 棄却限界値の取得（95%信頼水準の場合の値）
         q_critical_values = {
-            3: 0.970, 4: 0.829, 5: 0.710, 6: 0.628,
-            7: 0.569, 8: 0.608, 9: 0.564, 10: 0.530
+            3: 0.970, 4: 0.829, 5: 0.710, 6: 0.625,
+            7: 0.568, 8: 0.526, 9: 0.493, 10: 0.466
         }
         
         # データ数に応じた棄却限界値を取得（データ数が10より大きい場合は10のものを使用）
@@ -52,7 +52,7 @@ class StatisticalAnalyzer:
         }
 
     @staticmethod
-    def calculate_confidence_interval(data: List[float], confidence_level: float = 0.68) -> Dict[str, float]:
+    def calculate_confidence_interval(data: List[float], confidence_level: float = 0.683) -> Dict[str, float]:
         """t分布に基づく信頼区間を計算する
 
         Args:

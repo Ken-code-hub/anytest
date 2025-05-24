@@ -16,6 +16,9 @@ def main():
         ui_manager = UIManager()
         layout = ui_manager.create_layout()
         
+        # キーボードイベントハンドラーを設定
+        page.on_keyboard_event = ui_manager._on_keyboard_event
+        
         # レイアウトをページに追加
         page.add(layout)
         page.update()

@@ -1,5 +1,6 @@
 import flet as ft
 from typing import Callable, Dict, List
+import pyperclip
 from .validator import DataValidator
 from .analyzer import StatisticalAnalyzer
 
@@ -16,24 +17,28 @@ class UIManager:
         self.variable_input = ft.TextField(
             label="変数名",
             hint_text="カンマ区切りで変数名を入力 (例: x,y,z)",
+            on_focus=self._on_text_field_focus,
             **text_field_style
         )
         
         self.value_input = ft.TextField(
             label="変数の値",
             hint_text="カンマ区切りで値を入力 (例: 10,20,30)",
+            on_focus=self._on_text_field_focus,
             **text_field_style
         )
         
         self.error_input = ft.TextField(
             label="誤差",
             hint_text="カンマ区切りで誤差を入力 (例: 0.1,0.2,0.3)",
+            on_focus=self._on_text_field_focus,
             **text_field_style
         )
         
         self.function_input = ft.TextField(
             label="関数",
             hint_text="計算する関数を入力 (例: x + y * z)",
+            on_focus=self._on_text_field_focus,
             **text_field_style
         )
 
@@ -43,6 +48,7 @@ class UIManager:
             min_lines=3,
             max_lines=5,
             hint_text="スペースまたは改行で区切って数値を入力してください",
+            on_focus=self._on_text_field_focus,
             **text_field_style
         )
         
@@ -93,6 +99,55 @@ class UIManager:
         # UIコンポーネントの参照を保持
         self._validator = DataValidator()
         self._analyzer = StatisticalAnalyzer()
+        
+        # 現在フォーカスされているテキストフィールドを保持
+        self.focused_text_field = None
+
+    def _on_text_field_focus(self, e):
+        """テキストフィールドがフォーカスされた時の処理"""
+        self.focused_text_field = e.control
+
+    def _on_keyboard_event(self, e: ft.KeyboardEvent):
+        """キーボードイベントを処理する"""
+        # Ctrl+V または Cmd+V でペースト
+        if (e.key == "v" and e.ctrl) or (e.key == "v" and e.meta):
+            self._paste_from_clipboard()
+        # Ctrl+C または Cmd+C でコピー（テキストが選択されている場合）
+        elif (e.key == "c" and e.ctrl) or (e.key == "c" and e.meta):
+            self._copy_to_clipboard()
+
+    def _paste_from_clipboard(self):
+        """クリップボードから内容をペーストする"""
+        if self.focused_text_field:
+            try:
+                clipboard_content = pyperclip.paste()
+                if clipboard_content:
+                    current_value = self.focused_text_field.value or ""
+                    # カーソル位置が取得できない場合は末尾に追加
+                    self.focused_text_field.value = current_value + clipboard_content
+                    self.focused_text_field.update()
+            except Exception as e:
+                print(f"ペーストエラー: {e}")
+
+    def _copy_to_clipboard(self):
+        """選択されたテキストをクリップボードにコピーする"""
+        if self.focused_text_field and self.focused_text_field.value:
+            try:
+                # テキストフィールドの全内容をコピー（選択範囲の取得は困難なため）
+                pyperclip.copy(self.focused_text_field.value)
+            except Exception as e:
+                print(f"コピーエラー: {e}")
+
+    def _paste_to_field(self, text_field: ft.TextField):
+        """指定されたテキストフィールドにクリップボードの内容をペーストする"""
+        try:
+            clipboard_content = pyperclip.paste()
+            if clipboard_content:
+                # 現在の値に追加するか、置き換えるかを選択（今回は置き換え）
+                text_field.value = clipboard_content
+                text_field.update()
+        except Exception as e:
+            print(f"ペーストエラー: {e}")
 
     def create_layout(self) -> ft.Container:
         """UIレイアウトを作成する
@@ -113,7 +168,19 @@ class UIManager:
         # 基本統計タブのコンテンツ
         basic_stats_content = ft.Container(
             content=ft.Column([
-                self.data_input,
+                ft.Row([
+                    self.data_input,
+                    ft.Container(
+                        content=ft.ElevatedButton(
+                            text="📋 ペースト",
+                            on_click=lambda _: self._paste_to_field(self.data_input),
+                            bgcolor=ft.colors.GREEN_50,
+                            color=ft.colors.GREEN_700,
+                            width=100
+                        ),
+                        padding=ft.padding.only(left=10, top=25)
+                    )
+                ], alignment=ft.MainAxisAlignment.START),
                 ft.Container(height=20),  # スペーシング
                 ft.Row(
                     controls=[
@@ -130,10 +197,58 @@ class UIManager:
         # 誤差伝播タブのコンテンツ
         error_prop_content = ft.Container(
             content=ft.Column([
-                self.function_input,
-                self.variable_input,
-                self.value_input,
-                self.error_input,
+                ft.Row([
+                    self.function_input,
+                    ft.Container(
+                        content=ft.ElevatedButton(
+                            text="📋",
+                            on_click=lambda _: self._paste_to_field(self.function_input),
+                            bgcolor=ft.colors.GREEN_50,
+                            color=ft.colors.GREEN_700,
+                            width=50
+                        ),
+                        padding=ft.padding.only(left=10, top=25)
+                    )
+                ], alignment=ft.MainAxisAlignment.START),
+                ft.Row([
+                    self.variable_input,
+                    ft.Container(
+                        content=ft.ElevatedButton(
+                            text="📋",
+                            on_click=lambda _: self._paste_to_field(self.variable_input),
+                            bgcolor=ft.colors.GREEN_50,
+                            color=ft.colors.GREEN_700,
+                            width=50
+                        ),
+                        padding=ft.padding.only(left=10, top=25)
+                    )
+                ], alignment=ft.MainAxisAlignment.START),
+                ft.Row([
+                    self.value_input,
+                    ft.Container(
+                        content=ft.ElevatedButton(
+                            text="📋",
+                            on_click=lambda _: self._paste_to_field(self.value_input),
+                            bgcolor=ft.colors.GREEN_50,
+                            color=ft.colors.GREEN_700,
+                            width=50
+                        ),
+                        padding=ft.padding.only(left=10, top=25)
+                    )
+                ], alignment=ft.MainAxisAlignment.START),
+                ft.Row([
+                    self.error_input,
+                    ft.Container(
+                        content=ft.ElevatedButton(
+                            text="📋",
+                            on_click=lambda _: self._paste_to_field(self.error_input),
+                            bgcolor=ft.colors.GREEN_50,
+                            color=ft.colors.GREEN_700,
+                            width=50
+                        ),
+                        padding=ft.padding.only(left=10, top=25)
+                    )
+                ], alignment=ft.MainAxisAlignment.START),
                 ft.Container(height=20),  # スペーシング
                 ft.Row(
                     controls=[self.error_propagation_button],
@@ -204,6 +319,17 @@ class UIManager:
             expand=True,
             padding=ft.padding.all(24)
         )
+
+    def _paste_to_field(self, text_field: ft.TextField):
+        """指定されたテキストフィールドにクリップボードの内容をペーストする"""
+        try:
+            clipboard_content = pyperclip.paste()
+            if clipboard_content:
+                # 現在の値に追加するか、置き換えるかを選択（今回は置き換え）
+                text_field.value = clipboard_content
+                text_field.update()
+        except Exception as e:
+            print(f"ペーストエラー: {e}")
 
     def handle_test_click(self, test_type: str) -> None:
         """統計テストの実行を処理する
@@ -288,11 +414,7 @@ class UIManager:
         # 結果表示エリアを表示
         self.results_area.visible = True
         self.results_area.update()
-        """結果メッセージを表示する
-
-        Args:
-            message (str): 表示する結果メッセージ
-        """
+        
         # 重要な数値を強調表示
         parts = message.split(": ")
         if len(parts) > 1:

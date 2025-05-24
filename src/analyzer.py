@@ -53,7 +53,7 @@ class StatisticalAnalyzer:
 
         Args:
             data (List[float]): データ
-            confidence_level (float, optional): 信頼水準. デフォルトは0.95
+            confidence_level (float, optional): 信頼水準. デフォルトは0.683
 
         Returns:
             Dict[str, float]: 信頼区間の計算結果

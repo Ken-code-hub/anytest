@@ -151,6 +151,52 @@ class StatisticalAnalyzer:
         }
 
     @staticmethod
+    def perform_ttest(group1: List[float], group2: List[float], test_type: str = "independent") -> Dict[str, float]:
+        """2集団のt検定を実行する
+
+        Args:
+            group1 (List[float]): 第1群のデータ
+            group2 (List[float]): 第2群のデータ
+            test_type (str): 検定の種類 ("independent": 独立2標本, "paired": 対応2標本)
+
+        Returns:
+            Dict[str, float]: t検定の結果
+            - statistic: t統計量
+            - pvalue: p値
+            - dof: 自由度
+            - mean1: 第1群の平均
+            - mean2: 第2群の平均
+            - test_type: 実行した検定の種類
+        """
+        group1_array = np.array(group1)
+        group2_array = np.array(group2)
+        
+        mean1 = np.mean(group1_array)
+        mean2 = np.mean(group2_array)
+        
+        if test_type == "independent":
+            # 独立2標本t検定（等分散を仮定）
+            statistic, pvalue = stats.ttest_ind(group1_array, group2_array)
+            dof = len(group1) + len(group2) - 2
+        elif test_type == "paired":
+            # 対応2標本t検定
+            if len(group1) != len(group2):
+                raise ValueError("対応2標本t検定では、両群のデータ数が同じである必要があります")
+            statistic, pvalue = stats.ttest_rel(group1_array, group2_array)
+            dof = len(group1) - 1
+        else:
+            raise ValueError("test_typeは'independent'または'paired'である必要があります")
+        
+        return {
+            "statistic": float(statistic),
+            "pvalue": float(pvalue),
+            "dof": int(dof),
+            "mean1": float(mean1),
+            "mean2": float(mean2),
+            "test_type": test_type
+        }
+
+    @staticmethod
     def format_results(results: Dict[str, float], test_type: str) -> str:
         """統計結果を文字列にフォーマットする
 
@@ -162,10 +208,16 @@ class StatisticalAnalyzer:
             str: フォーマットされた結果
         """
         if test_type == "ttest":
+            test_name = "独立2標本t検定" if results['test_type'] == "independent" else "対応2標本t検定"
+            significance = "有意" if results['pvalue'] < 0.05 else "非有意"
             return (
-                f"t検定結果:\n"
+                f"{test_name}結果:\n"
+                f"第1群平均 = {results['mean1']:.4f}\n"
+                f"第2群平均 = {results['mean2']:.4f}\n"
                 f"検定統計量 (t値) = {results['statistic']:.4f}\n"
-                f"p値 = {results['pvalue']:.4f}"
+                f"自由度 = {results['dof']}\n"
+                f"p値 = {results['pvalue']:.4f}\n"
+                f"判定 (α=0.05): {significance}"
             )
         elif test_type == "qtest":
             return (

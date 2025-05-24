@@ -52,6 +52,10 @@ class DataValidator:
             # Qテストには最低3つのデータが必要
             if len(data) < 3:
                 return False, "Qテストには最低3つのデータが必要です。"
+        elif test_type == "ttest":
+            # t検定には最低2つのデータが必要
+            if len(data) < 2:
+                return False, "t検定には最低2つのデータが必要です。"
         elif test_type == "confidence_interval":
             if len(data) < 1:
                 return False, "信頼区間の計算には最低1つのデータが必要です。"
@@ -125,3 +129,37 @@ class DataValidator:
         """
         mid = len(data) // 2
         return data[:mid], data[mid:]
+
+    @staticmethod
+    def validate_ttest_inputs(group1_text: str, group2_text: str) -> Tuple[bool, Optional[List[float]], Optional[List[float]], Optional[str]]:
+        """t検定用の入力データを検証する
+
+        Args:
+            group1_text (str): 第1群のデータ（文字列）
+            group2_text (str): 第2群のデータ（文字列）
+
+        Returns:
+            Tuple[bool, Optional[List[float]], Optional[List[float]], Optional[str]]:
+            - 検証結果（True/False）
+            - 第1群の数値リスト
+            - 第2群の数値リスト
+            - エラーメッセージ（検証成功時はNone）
+        """
+        # 第1群のデータを検証
+        is_valid1, group1, error1 = DataValidator.validate_input(group1_text)
+        if not is_valid1:
+            return False, None, None, f"第1群のデータエラー: {error1}"
+        
+        # 第2群のデータを検証
+        is_valid2, group2, error2 = DataValidator.validate_input(group2_text)
+        if not is_valid2:
+            return False, None, None, f"第2群のデータエラー: {error2}"
+        
+        # 各群に最低2つのデータが必要
+        if len(group1) < 2:
+            return False, None, None, "第1群には最低2つのデータが必要です"
+        
+        if len(group2) < 2:
+            return False, None, None, "第2群には最低2つのデータが必要です"
+        
+        return True, group1, group2, None

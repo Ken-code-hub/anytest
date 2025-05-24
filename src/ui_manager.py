@@ -52,6 +52,38 @@ class UIManager:
             **text_field_style
         )
         
+        # t検定用の入力フィールド
+        self.group1_input = ft.TextField(
+            label="第1群のデータ",
+            multiline=True,
+            min_lines=2,
+            max_lines=4,
+            hint_text="スペースまたは改行で区切って数値を入力",
+            on_focus=self._on_text_field_focus,
+            **text_field_style
+        )
+        
+        self.group2_input = ft.TextField(
+            label="第2群のデータ",
+            multiline=True,
+            min_lines=2,
+            max_lines=4,
+            hint_text="スペースまたは改行で区切って数値を入力",
+            on_focus=self._on_text_field_focus,
+            **text_field_style
+        )
+        
+        # t検定の種類選択
+        self.ttest_type_dropdown = ft.Dropdown(
+            label="検定の種類",
+            width=400,
+            options=[
+                ft.dropdown.Option("independent", "独立2標本t検定"),
+                ft.dropdown.Option("paired", "対応2標本t検定")
+            ],
+            value="independent"
+        )
+        
         # 結果表示のスタイル設定
         self.result_text = ft.Text(
             value="",
@@ -94,6 +126,11 @@ class UIManager:
         self.error_propagation_button = ft.ElevatedButton(
             text="誤差伝播計算",
             on_click=lambda _: self.handle_test_click("error_propagation")
+        )
+
+        self.ttest_button = ft.ElevatedButton(
+            text="t検定実行",
+            on_click=lambda _: self.handle_test_click("ttest")
         )
 
         # UIコンポーネントの参照を保持
@@ -164,6 +201,9 @@ class UIManager:
         self.confidence_interval_button.color = ft.colors.BLACK
         self.error_propagation_button.bgcolor = ft.colors.BLUE_700
         self.error_propagation_button.color = ft.colors.WHITE
+        
+        self.ttest_button.bgcolor = ft.colors.PURPLE_700
+        self.ttest_button.color = ft.colors.WHITE
 
         # 基本統計タブのコンテンツ
         basic_stats_content = ft.Container(
@@ -271,6 +311,10 @@ class UIManager:
                     content=basic_stats_content
                 ),
                 ft.Tab(
+                    text="t検定",
+                    content=self._create_ttest_content()
+                ),
+                ft.Tab(
                     text="誤差伝播",
                     content=error_prop_content
                 )
@@ -320,16 +364,47 @@ class UIManager:
             padding=ft.padding.all(24)
         )
 
-    def _paste_to_field(self, text_field: ft.TextField):
-        """指定されたテキストフィールドにクリップボードの内容をペーストする"""
-        try:
-            clipboard_content = pyperclip.paste()
-            if clipboard_content:
-                # 現在の値に追加するか、置き換えるかを選択（今回は置き換え）
-                text_field.value = clipboard_content
-                text_field.update()
-        except Exception as e:
-            print(f"ペーストエラー: {e}")
+    def _create_ttest_content(self) -> ft.Container:
+        """t検定タブのコンテンツを作成する"""
+        return ft.Container(
+            content=ft.Column([
+                ft.Row([
+                    self.group1_input,
+                    ft.Container(
+                        content=ft.ElevatedButton(
+                            text="📋",
+                            on_click=lambda _: self._paste_to_field(self.group1_input),
+                            bgcolor=ft.colors.GREEN_50,
+                            color=ft.colors.GREEN_700,
+                            width=50
+                        ),
+                        padding=ft.padding.only(left=10, top=25)
+                    )
+                ], alignment=ft.MainAxisAlignment.START),
+                ft.Row([
+                    self.group2_input,
+                    ft.Container(
+                        content=ft.ElevatedButton(
+                            text="📋",
+                            on_click=lambda _: self._paste_to_field(self.group2_input),
+                            bgcolor=ft.colors.GREEN_50,
+                            color=ft.colors.GREEN_700,
+                            width=50
+                        ),
+                        padding=ft.padding.only(left=10, top=25)
+                    )
+                ], alignment=ft.MainAxisAlignment.START),
+                ft.Row([
+                    self.ttest_type_dropdown
+                ], alignment=ft.MainAxisAlignment.START),
+                ft.Container(height=20),  # スペーシング
+                ft.Row(
+                    controls=[self.ttest_button],
+                    alignment=ft.MainAxisAlignment.CENTER
+                )
+            ], spacing=12),
+            padding=ft.padding.symmetric(horizontal=24, vertical=16)
+        )
 
     def handle_test_click(self, test_type: str) -> None:
         """統計テストの実行を処理する
@@ -363,6 +438,18 @@ class UIManager:
                 results = StatisticalAnalyzer.calculate_error_propagation(
                     variables, values, errors, function_str
                 )
+            elif test_type == "ttest":
+                # t検定の処理
+                is_valid, group1, group2, error_msg = DataValidator.validate_ttest_inputs(
+                    self.group1_input.value, self.group2_input.value
+                )
+                if not is_valid:
+                    self.show_error(error_msg)
+                    return
+
+                # t検定の実行
+                test_type_value = self.ttest_type_dropdown.value
+                results = StatisticalAnalyzer.perform_ttest(group1, group2, test_type_value)
             else:
                 # 基本統計処理の入力データの検証
                 is_valid, numbers, error_msg = DataValidator.validate_input(self.data_input.value)

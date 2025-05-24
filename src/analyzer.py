@@ -23,15 +23,11 @@ class StatisticalAnalyzer:
         n = len(sorted_data)
 
         # Q統計量の計算
-        if n <= 3:
-            # n ≤ 3の場合のQ統計量
-            q_stat = abs(sorted_data[1] - sorted_data[0]) / abs(sorted_data[-1] - sorted_data[0])
-        else:
-            # n > 3の場合のQ統計量
-            q_stat = abs(sorted_data[1] - sorted_data[0]) / abs(sorted_data[-1] - sorted_data[0])
-            q_stat_end = abs(sorted_data[-1] - sorted_data[-2]) / abs(sorted_data[-1] - sorted_data[0])
-            # 大きい方のQ統計量を採用
-            q_stat = max(q_stat, q_stat_end)
+        # n > 3の場合のQ統計量
+        q_stat = abs(sorted_data[1] - sorted_data[0]) / abs(sorted_data[-1] - sorted_data[0])
+        q_stat_end = abs(sorted_data[-1] - sorted_data[-2]) / abs(sorted_data[-1] - sorted_data[0])
+        # 大きい方のQ統計量を採用
+        q_stat = max(q_stat, q_stat_end)
 
         # 棄却限界値の取得（95%信頼水準の場合の値）
         q_critical_values = {
